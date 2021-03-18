@@ -37,27 +37,43 @@ module SUBST
 
   configuration
     <k> $PGM:Exp </k>
-    <mem> .Map </mem>
+    <mem>
+      #token("a", "Id") |-> 23
+      #token("b", "Id") |-> 2
+      #token("c", "Id") |-> 3
+      #token("d", "Id") |-> 2
+    </mem>
 
-  rule <k> E:IntExp => substInt(E) ... </k> requires notBool isInt(E)
+  rule
+    <k> E:IntExp => substInt(M, E) ... </k>
+    <mem> M </mem>
+    requires notBool isInt(E)
 
-  syntax Int ::= substInt(IntExp) [function]
-  rule substInt(I:Int) => I
-  rule substInt(_:Id) => 0
+  rule
+    <k> E:BoolExp => substBool(M, E) ... </k>
+    <mem> M </mem>
+    requires notBool isBool(E)
 
-  rule substInt(X + Y) => substInt(X) +Int substInt(Y)
-  rule substInt(X * Y) => substInt(X) *Int substInt(Y)
-  rule substInt(X / Y) => substInt(X) /Int substInt(Y)
-  rule substInt(X - Y) => substInt(X) -Int substInt(Y)
-  rule substInt(X ^ Y) => substInt(X) ^Int substInt(Y)
+  syntax Int ::= substInt(Map, IntExp) [function]
+  rule substInt(_, I:Int) => I
+  rule substInt(M, X:Id) => {M[X]}:>Int
 
-  rule X < Y => X <Int Y
-  rule X <= Y => X <=Int Y
-  rule X > Y => X >Int Y
-  rule X >= Y => X >=Int Y
-  rule X == Y => X ==Int Y
-  rule X != Y => X =/=Int Y
+  rule substInt(M, X + Y) => substInt(M, X) +Int substInt(M, Y)
+  rule substInt(M, X * Y) => substInt(M, X) *Int substInt(M, Y)
+  rule substInt(M, X / Y) => substInt(M, X) /Int substInt(M, Y)
+  rule substInt(M, X - Y) => substInt(M, X) -Int substInt(M, Y)
+  rule substInt(M, X ^ Y) => substInt(M, X) ^Int substInt(M, Y)
 
-  rule X && Y => X andBool Y
-  rule X || Y => X orBool Y
+  syntax Bool ::= substBool(Map, BoolExp) [function]
+  rule substBool(_, B:Bool) => B
+
+  rule substBool(M, X <  Y) => substInt(M, X) <Int   substInt(M, Y)
+  rule substBool(M, X <= Y) => substInt(M, X) <=Int  substInt(M, Y)
+  rule substBool(M, X >  Y) => substInt(M, X) >Int   substInt(M, Y)
+  rule substBool(M, X >= Y) => substInt(M, X) >=Int  substInt(M, Y)
+  rule substBool(M, X == Y) => substInt(M, X) ==Int  substInt(M, Y)
+  rule substBool(M, X != Y) => substInt(M, X) =/=Int substInt(M, Y)
+
+  rule substBool(M, X && Y) => substBool(M, X) andBool substBool(M, Y)
+  rule substBool(M, X || Y) => substBool(M, X) orBool substBool(M, Y)
 endmodule
